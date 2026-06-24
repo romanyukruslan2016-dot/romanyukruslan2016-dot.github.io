@@ -39,7 +39,7 @@ export function KanbanBoard() {
   return (
     <div className="kds">
       <header className="kds__header">
-        <h1 className="kds__title">Kitchen Display</h1>
+        <h1 className="kds__title">KITCHEN DISPLAY</h1>
         <p className="kds__subtitle">
           Tap a card to advance it through the line
         </p>
