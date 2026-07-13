@@ -178,8 +178,8 @@ export function insertMockOrder() {
   const correlationId = newCorrelationId();
   const dishes = pickDishes();
   const order: Order = {
-    id: `order-${++orderCounter}`,
-    orderNumber: orderCounter,
+    id: crypto.randomUUID(),
+    orderNumber: ++orderCounter,
     tableNumber: 1 + Math.floor(Math.random() * 20),
     dishes,
     column: 'new',
@@ -593,11 +593,12 @@ function simulateCrossSessionMismatchScenario(): IncidentRecord | null {
   const target = pickRandomFrom(orders);
   if (!target) return null;
   const otherStatus = nextColumn(target.column) ?? 'new';
+  const otherSessionId = crypto.randomUUID();
   const now = Date.now();
 
   const snapshots: SessionSnapshot[] = [
     { sessionId: DEMO_SESSION_ID, orderId: target.id, status: target.column, capturedAt: new Date(now).toISOString() },
-    { sessionId: 'session-B', orderId: target.id, status: otherStatus, capturedAt: new Date(now + 500).toISOString() },
+    { sessionId: otherSessionId, orderId: target.id, status: otherStatus, capturedAt: new Date(now + 500).toISOString() },
   ];
   const draft = detectCrossSessionMismatch(snapshots, 5000)[0];
   if (!draft) return null;
@@ -612,7 +613,7 @@ function simulateCrossSessionMismatchScenario(): IncidentRecord | null {
   recordStateSnapshot({
     orderId: target.id,
     snapshotSource: 'ui',
-    sessionId: 'session-B',
+    sessionId: otherSessionId,
     status: otherStatus,
     stateVersion: snapshots[1].capturedAt,
   });
