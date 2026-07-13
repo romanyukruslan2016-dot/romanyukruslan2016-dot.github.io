@@ -1,48 +1,56 @@
 import type { Order } from '../types';
-import { COLUMN_LABELS, nextColumn } from '../types';
 import { useOrderTimer } from '../hooks/useOrderTimer';
 
 interface OrderCardProps {
   order: Order;
-  onAdvance: (orderId: string) => void;
 }
 
-export function OrderCard({ order, onAdvance }: OrderCardProps) {
+export function OrderCard({ order }: OrderCardProps) {
   const minutes = useOrderTimer(order.createdAt);
-  const next = nextColumn(order.column);
 
   const timerClass =
-    minutes >= 20 ? 'timer--urgent' : minutes >= 10 ? 'timer--warn' : 'timer--ok';
+    minutes >= 20
+      ? 'border-[#C8FF00] text-[#C8FF00] shadow-[0_0_12px_rgba(200,255,0,0.35)] animate-pulse'
+      : minutes >= 10
+        ? 'border-[#C8FF00]/50 text-[#C8FF00]'
+        : 'border-white/10 text-[#C8FF00]';
 
   return (
-    <article className="order-card">
-      <div className="order-card__header">
+    <article className="rounded-xl border border-white/[0.08] bg-[#0d0d0d] p-3 transition-colors hover:border-[#C8FF00]/50">
+      <div className="mb-2 flex items-start justify-between gap-2">
         <div>
-          <span className="order-card__label">Order</span>
-          <p className="order-card__order-num">#{order.orderNumber}</p>
+          <span className="block text-[10px] font-semibold uppercase tracking-widest text-white/40">
+            Order
+          </span>
+          <p className="font-mono text-lg font-bold text-white">#{order.orderNumber}</p>
         </div>
-        <div className="order-card__table-wrap">
-          <span className="order-card__label">Table</span>
-          <p className="order-card__table-num">{order.tableNumber}</p>
+        <div className="text-right">
+          <span className="block text-[10px] font-semibold uppercase tracking-widest text-white/40">
+            Table
+          </span>
+          <p className="font-mono text-lg font-bold text-[#C8FF00]">{order.tableNumber}</p>
         </div>
       </div>
 
       <div
-        className={`order-card__timer ${timerClass}`}
+        className={`mb-3 flex items-center justify-center gap-1 rounded-lg border py-1.5 text-sm font-bold ${timerClass}`}
         aria-label={`Waiting ${minutes} minutes`}
       >
-        <span className="order-card__timer-value">{minutes}</span>
-        <span className="order-card__timer-unit">min</span>
+        <span className="font-mono">{minutes}</span>
+        <span className="text-xs uppercase tracking-wide">min</span>
       </div>
 
-      <ul className="order-card__dishes">
-        {order.dishes.map((dish) => (
-          <li key={dish.name} className="order-card__dish">
-            <p className="order-card__dish-name">{dish.name}</p>
+      <ul className="flex flex-col gap-2">
+        {order.dishes.map((dish, i) => (
+          <li key={i} className="border-t border-white/[0.08] pt-2 first:border-none first:pt-0">
+            <p className="text-sm font-semibold text-white">{dish.name}</p>
             {dish.modifiers.length > 0 && (
-              <ul className="order-card__modifiers">
+              <ul className="mt-1 flex flex-wrap gap-1">
                 {dish.modifiers.map((mod) => (
-                  <li key={mod} className="order-card__modifier">
+                  <li
+                    key={mod}
+                    className="rounded-full border border-[#C8FF00]/30 bg-[#C8FF00]/10 px-2 py-0.5 text-[11px] font-medium text-[#C8FF00]"
+                  >
                     {mod}
                   </li>
                 ))}
@@ -51,18 +59,6 @@ export function OrderCard({ order, onAdvance }: OrderCardProps) {
           </li>
         ))}
       </ul>
-
-      {next ? (
-        <button
-          type="button"
-          className="order-card__btn"
-          onClick={() => onAdvance(order.id)}
-        >
-          Move to {COLUMN_LABELS[next]}
-        </button>
-      ) : (
-        <div className="order-card__done">Ready for pickup</div>
-      )}
     </article>
   );
 }

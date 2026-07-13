@@ -12,6 +12,29 @@ export interface Order {
   dishes: Dish[];
   column: ColumnId;
   createdAt: string;
+  prepStartedAt?: string;
+  readyStartedAt?: string;
+}
+
+export interface TableCounts {
+  orders: number;
+  order_items: number;
+  order_modifiers: number;
+  kitchen_stations: number;
+  order_status_history: number;
+}
+
+export interface EngineEvent {
+  id: string;
+  time: string;
+  text: string;
+}
+
+export interface EngineSnapshot {
+  orders: Order[];
+  events: EngineEvent[];
+  tableCounts: TableCounts;
+  autoplay: boolean;
 }
 
 export const COLUMN_ORDER: ColumnId[] = ['new', 'prep', 'ready'];

@@ -1,0 +1,109 @@
+import {
+  advanceNewToPrep,
+  advancePrepToReady,
+  cancelNewOrder,
+  insertMockOrder,
+  runLogicStep,
+  serveReadyOrder,
+  toggleAutoplay,
+  useDemoEngine,
+} from '../lib/demoEngine';
+import type { TableCounts } from '../types';
+
+const ACTION_BTN =
+  'w-full py-2.5 px-3 text-left text-sm font-medium border border-white/10 rounded-lg ' +
+  'bg-transparent text-white/80 transition-colors cursor-pointer ' +
+  'hover:border-[#C8FF00] hover:text-[#C8FF00]';
+
+const TABLE_ROWS: { key: keyof TableCounts; label: string }[] = [
+  { key: 'orders', label: 'orders' },
+  { key: 'order_items', label: 'order_items' },
+  { key: 'order_modifiers', label: 'order_modifiers' },
+  { key: 'kitchen_stations', label: 'kitchen_stations' },
+  { key: 'order_status_history', label: 'order_status_history' },
+];
+
+export function ScenarioPanel() {
+  const { events, tableCounts, autoplay } = useDemoEngine();
+
+  return (
+    <aside className="flex h-full w-full flex-col gap-6 overflow-y-auto border-r border-white/[0.08] bg-[#1a1a1a] p-4">
+      {/* Scenario Actions */}
+      <section className="flex flex-col gap-3">
+        <h2
+          className="text-xs font-bold uppercase tracking-widest text-white/40"
+          style={{ fontFamily: 'Syne, sans-serif' }}
+        >
+          Scenario Actions
+        </h2>
+        <div className="flex flex-col gap-2">
+          <button type="button" className={ACTION_BTN} onClick={insertMockOrder}>
+            Insert Mock Order
+          </button>
+          <button type="button" className={ACTION_BTN} onClick={runLogicStep}>
+            Run Logic Step
+          </button>
+          <button type="button" className={ACTION_BTN} onClick={advanceNewToPrep}>
+            Advance New → Prep
+          </button>
+          <button type="button" className={ACTION_BTN} onClick={advancePrepToReady}>
+            Advance Prep → Ready
+          </button>
+          <button type="button" className={ACTION_BTN} onClick={serveReadyOrder}>
+            Serve Ready Order
+          </button>
+          <button type="button" className={ACTION_BTN} onClick={cancelNewOrder}>
+            Cancel New Order
+          </button>
+          <button
+            type="button"
+            className={`${ACTION_BTN} ${autoplay ? 'border-[#C8FF00] text-[#C8FF00]' : ''}`}
+            onClick={toggleAutoplay}
+          >
+            Toggle Autoplay {autoplay ? 'ON' : 'OFF'}
+          </button>
+        </div>
+      </section>
+
+      {/* Simulated Table Rows */}
+      <section className="flex flex-col gap-3">
+        <h2
+          className="text-xs font-bold uppercase tracking-widest text-white/40"
+          style={{ fontFamily: 'Syne, sans-serif' }}
+        >
+          Simulated Table Rows
+        </h2>
+        <div className="flex flex-col gap-1 rounded-lg border border-white/[0.08] bg-[#0d0d0d] p-3">
+          {TABLE_ROWS.map(({ key, label }) => (
+            <div key={key} className="flex items-center justify-between py-1 text-xs">
+              <span className="font-mono text-white/50">{label}</span>
+              <span className="font-mono font-semibold text-[#C8FF00]">{tableCounts[key]}</span>
+            </div>
+          ))}
+        </div>
+      </section>
+
+      {/* Recent Order Events */}
+      <section className="flex min-h-0 flex-1 flex-col gap-3">
+        <h2
+          className="text-xs font-bold uppercase tracking-widest text-white/40"
+          style={{ fontFamily: 'Syne, sans-serif' }}
+        >
+          Recent Order Events
+        </h2>
+        <div className="flex flex-1 flex-col gap-2 overflow-y-auto">
+          {events.length === 0 && <p className="text-xs text-white/30">No events yet</p>}
+          {events.map((e) => (
+            <div
+              key={e.id}
+              className="flex items-start justify-between gap-2 rounded-lg border border-white/[0.08] bg-[#0d0d0d] px-3 py-2 text-xs"
+            >
+              <span className="text-white/70">{e.text}</span>
+              <span className="shrink-0 font-mono text-white/30">{e.time}</span>
+            </div>
+          ))}
+        </div>
+      </section>
+    </aside>
+  );
+}
