@@ -1,7 +1,10 @@
 import {
   advanceNewToPrep,
   advancePrepToReady,
+  analyzeAndShowFixPath,
+  applyPlaybookStep,
   cancelNewOrder,
+  closeFixPath,
   insertMockOrder,
   runLogicStep,
   serveReadyOrder,
@@ -24,7 +27,11 @@ const TABLE_ROWS: { key: keyof TableCounts; label: string }[] = [
 ];
 
 export function ScenarioPanel() {
-  const { events, tableCounts, autoplay } = useDemoEngine();
+  const { events, tableCounts, autoplay, incidents, playbooks, focusedIncidentId } = useDemoEngine();
+
+  const openIncidentCount = incidents.filter((i) => i.status === 'open').length;
+  const focusedIncident = incidents.find((i) => i.id === focusedIncidentId);
+  const focusedSteps = focusedIncidentId ? playbooks[focusedIncidentId] : undefined;
 
   return (
     <aside className="flex h-full w-full flex-col gap-6 overflow-y-auto border-r border-white/[0.08] bg-[#1a1a1a] p-4">
@@ -63,6 +70,77 @@ export function ScenarioPanel() {
             Toggle Autoplay {autoplay ? 'ON' : 'OFF'}
           </button>
         </div>
+      </section>
+
+      {/* Reliability */}
+      <section className="flex flex-col gap-3">
+        <div className="flex items-center justify-between">
+          <h2
+            className="text-xs font-bold uppercase tracking-widest text-white/40"
+            style={{ fontFamily: 'Syne, sans-serif' }}
+          >
+            Reliability
+          </h2>
+          {openIncidentCount > 0 && (
+            <span className="rounded-full border border-[#C8FF00]/30 bg-[#C8FF00]/10 px-2 py-0.5 text-[10px] font-semibold text-[#C8FF00]">
+              {openIncidentCount} open
+            </span>
+          )}
+        </div>
+        <button type="button" className={ACTION_BTN} onClick={analyzeAndShowFixPath}>
+          Показати шлях виправлення
+        </button>
+
+        {focusedIncident && focusedSteps && (
+          <div className="flex flex-col gap-3 rounded-lg border border-[#C8FF00]/30 bg-[#0d0d0d] p-3">
+            <div className="flex items-start justify-between gap-2">
+              <div className="text-xs">
+                <p className="font-semibold text-white/80">
+                  {focusedIncident.incidentType} · {focusedIncident.errorClass}
+                </p>
+                <p className="mt-0.5 text-white/40">
+                  severity: {focusedIncident.severity} · status: {focusedIncident.status}
+                  {focusedIncident.orderId ? ` · order: ${focusedIncident.orderId}` : ''}
+                </p>
+              </div>
+              <button
+                type="button"
+                className="shrink-0 text-xs text-white/40 hover:text-white"
+                onClick={closeFixPath}
+              >
+                Close
+              </button>
+            </div>
+
+            <ol className="flex flex-col gap-2">
+              {focusedSteps.map((step, index) => (
+                <li
+                  key={step.id}
+                  className="flex flex-col gap-1 rounded-lg border border-white/[0.08] bg-[#1a1a1a] p-2 text-xs"
+                >
+                  <div className="flex items-center justify-between gap-2">
+                    <span className="font-medium text-white/80">
+                      {index + 1}. {step.title}
+                    </span>
+                    <span className={step.status === 'done' ? 'shrink-0 text-[#C8FF00]' : 'shrink-0 text-white/30'}>
+                      {step.status === 'done' ? '✓ done' : 'pending'}
+                    </span>
+                  </div>
+                  <p className="text-white/40">{step.description}</p>
+                  {step.status === 'pending' && step.action && (
+                    <button
+                      type="button"
+                      className="mt-1 self-start rounded border border-[#C8FF00]/40 px-2 py-1 text-[#C8FF00] transition-colors hover:bg-[#C8FF00]/10"
+                      onClick={() => applyPlaybookStep(focusedIncident.id)}
+                    >
+                      Виконати крок
+                    </button>
+                  )}
+                </li>
+              ))}
+            </ol>
+          </div>
+        )}
       </section>
 
       {/* Simulated Table Rows */}

@@ -1,3 +1,5 @@
+import type { IncidentRecord, PlaybookStep } from './types/audit';
+
 export type ColumnId = 'new' | 'prep' | 'ready';
 
 export interface Dish {
@@ -35,6 +37,9 @@ export interface EngineSnapshot {
   events: EngineEvent[];
   tableCounts: TableCounts;
   autoplay: boolean;
+  incidents: IncidentRecord[];
+  playbooks: Record<string, PlaybookStep[]>;
+  focusedIncidentId: string | null;
 }
 
 export const COLUMN_ORDER: ColumnId[] = ['new', 'prep', 'ready'];
