@@ -23,23 +23,19 @@ import {
   type StatusChangeEvent,
 } from './audit/detectors';
 import { buildPlaybookSteps } from './audit/playbooks';
+import { MENU_ITEMS } from './menu';
 
-const MENU: { name: string; modifiers: string[] }[] = [
-  { name: 'Борщ', modifiers: ['Без сметани', 'Гострий', 'Подвійна порція'] },
-  { name: 'Вареники', modifiers: ['З картоплею', 'З сиром', "З м'ясом", 'Смажені'] },
-  { name: 'Стейк', modifiers: ['Medium rare', 'Well done', 'Без солі', 'З перцевим соусом'] },
-  { name: 'Салат Цезар', modifiers: ['Без грінок', 'Без анчоусів', 'З куркою'] },
-  { name: 'Піца Маргарита', modifiers: ['Тонке тісто', 'Без цибулі', 'Подвійний сир'] },
-  { name: 'Курка гриль', modifiers: ['Гостра', 'З лимоном', 'Без шкірки'] },
-  { name: 'Деруни', modifiers: ['Зі сметаною', 'З грибним соусом'] },
-  { name: 'Шашлик', modifiers: ['Гострий маринад', 'Без цибулі', 'Подвійна порція'] },
-];
+const MENU: { name: string; modifiers: string[] }[] = MENU_ITEMS.map((item) => ({
+  name: item.name,
+  modifiers: item.availableModifiers,
+}));
 
 const KITCHEN_STATIONS_COUNT = 5;
 const AUTOPLAY_INTERVAL_MS = 30_000;
 const CLOCK_TICK_MS = 5_000;
 const NEW_TO_PREP_MS = 2 * 60_000;
 const PREP_TO_READY_MS = 3 * 60_000;
+export const ESTIMATED_PREP_MINUTES = (NEW_TO_PREP_MS + PREP_TO_READY_MS) / 60_000;
 const MAX_EVENTS = 10;
 const REALTIME_LATENCY_THRESHOLD_MS = 2000;
 
@@ -174,35 +170,69 @@ function logOrderAction(params: {
   });
 }
 
-export function insertMockOrder() {
-  const correlationId = newCorrelationId();
-  const dishes = pickDishes();
+// Shared write path for creating an order: every caller (the mock-order
+// button, the ordering agent, future real intake channels) goes through
+// here so there is exactly one place that assigns an order number, updates
+// the simulated table counters, and writes the command/state-snapshot/trace
+// audit triple. Do not insert into `orders` anywhere else.
+function createOrderCore(params: {
+  tableNumber: number;
+  dishes: Dish[];
+  actorRole: ActorRole;
+  source: CommandSource;
+}): Order {
   const order: Order = {
     id: crypto.randomUUID(),
     orderNumber: ++orderCounter,
-    tableNumber: 1 + Math.floor(Math.random() * 20),
-    dishes,
+    tableNumber: params.tableNumber,
+    dishes: params.dishes,
     column: 'new',
     createdAt: new Date().toISOString(),
   };
   orders = [...orders, order];
 
   counters.orders += 1;
-  counters.order_items += dishes.length;
-  counters.order_modifiers += dishes.reduce((sum, d) => sum + d.modifiers.length, 0);
+  counters.order_items += params.dishes.length;
+  counters.order_modifiers += params.dishes.reduce((sum, d) => sum + d.modifiers.length, 0);
   counters.order_status_history += 1;
 
   logOrderAction({
-    correlationId,
+    correlationId: newCorrelationId(),
     actionType: 'create_order',
     order,
-    actorRole: 'admin',
-    source: 'ui',
-    payload: { tableNumber: order.tableNumber, dishCount: dishes.length },
+    actorRole: params.actorRole,
+    source: params.source,
+    payload: { tableNumber: order.tableNumber, dishCount: params.dishes.length },
   });
 
   pushEvent(`Order #${order.orderNumber} created → new`);
   notify();
+  return order;
+}
+
+export function insertMockOrder() {
+  createOrderCore({
+    tableNumber: 1 + Math.floor(Math.random() * 20),
+    dishes: pickDishes(),
+    actorRole: 'admin',
+    source: 'ui',
+  });
+}
+
+// Entry point for the ordering agent (src/lib/agent/tools.ts). Dish/modifier
+// and table validation happen in the agent's createOrder tool before this is
+// called — by the time we get here the input is trusted.
+export function createOrderFromAgent(input: { tableNumber: number; dishes: Dish[] }): Order {
+  return createOrderCore({
+    tableNumber: input.tableNumber,
+    dishes: input.dishes,
+    actorRole: 'waiter',
+    source: 'demo_engine',
+  });
+}
+
+export function getOrderByNumber(orderNumber: number): Order | undefined {
+  return orders.find((o) => o.orderNumber === orderNumber);
 }
 
 export function advanceNewToPrep() {
