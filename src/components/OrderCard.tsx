@@ -1,5 +1,6 @@
 import type { Order } from '../types';
 import { useOrderTimer } from '../hooks/useOrderTimer';
+import { openPaymentPage } from '../lib/payment/paymentUiStore';
 
 interface OrderCardProps {
   order: Order;
@@ -59,6 +60,24 @@ export function OrderCard({ order }: OrderCardProps) {
           </li>
         ))}
       </ul>
+
+      {order.column === 'ready' && (
+        <div className="mt-3 border-t border-white/[0.08] pt-3">
+          {order.isPaid ? (
+            <p className="text-center text-xs font-semibold uppercase tracking-widest text-[#C8FF00]">
+              ✓ Оплачено
+            </p>
+          ) : (
+            <button
+              type="button"
+              className="w-full rounded-lg border border-[#C8FF00]/40 py-2 text-xs font-semibold uppercase tracking-wide text-[#C8FF00] transition-colors hover:bg-[#C8FF00]/10"
+              onClick={() => openPaymentPage(order.id)}
+            >
+              Оплатити рахунок
+            </button>
+          )}
+        </div>
+      )}
     </article>
   );
 }

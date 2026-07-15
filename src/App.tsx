@@ -1,5 +1,7 @@
 import { ChatWidget } from './components/ChatWidget'
+import { PaymentPage } from './components/PaymentPage'
 import { ScenarioPanel } from './components/ScenarioPanel'
+import { ThankYouPage } from './components/ThankYouPage'
 import { WorkflowBoard } from './components/WorkflowBoard'
 
 export default function App() {
@@ -18,6 +20,9 @@ export default function App() {
       <footer className="shrink-0 border-t border-[#C8FF00]/20 bg-[#C8FF00]/5 px-6 py-3 text-center text-xs text-white/60">
         Demo mode is active — You are viewing simulated KDS + database logic
       </footer>
+
+      <PaymentPage />
+      <ThankYouPage />
     </div>
   )
 }

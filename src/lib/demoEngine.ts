@@ -188,6 +188,7 @@ function createOrderCore(params: {
     dishes: params.dishes,
     column: 'new',
     createdAt: new Date().toISOString(),
+    isPaid: false,
   };
   orders = [...orders, order];
 
@@ -233,6 +234,10 @@ export function createOrderFromAgent(input: { tableNumber: number; dishes: Dish[
 
 export function getOrderByNumber(orderNumber: number): Order | undefined {
   return orders.find((o) => o.orderNumber === orderNumber);
+}
+
+export function getOrderById(orderId: string): Order | undefined {
+  return orders.find((o) => o.id === orderId);
 }
 
 export function advanceNewToPrep() {
@@ -326,6 +331,54 @@ export function cancelNewOrder() {
   orders = orders.filter((o) => o.id !== order.id);
   counters.order_status_history += 1;
   pushEvent(`Order #${order.orderNumber} cancelled → new→cancelled`);
+  notify();
+}
+
+// The only place `isPaid` is ever set to true. Called exclusively from
+// src/lib/payment/webhook.ts after signature verification and idempotency
+// checks pass on an 'approved' transaction — never from a UI click directly.
+export function markOrderPaid(orderId: string, paymentReference: string): void {
+  const order = orders.find((o) => o.id === orderId);
+  if (!order || order.isPaid) return;
+
+  const correlationId = newCorrelationId();
+  const updated: Order = { ...order, isPaid: true, paidAt: new Date().toISOString(), paymentReference };
+  orders = orders.map((o) => (o.id === orderId ? updated : o));
+  counters.order_status_history += 1;
+
+  logOrderAction({
+    correlationId,
+    actionType: 'payment_approved',
+    order: updated,
+    actorRole: 'system',
+    source: 'system_auto',
+    statusOverride: 'paid',
+    payload: { paymentReference },
+  });
+
+  pushEvent(`Order #${order.orderNumber} payment confirmed → paid`);
+  notify();
+}
+
+// Records a declined payment attempt in the audit trail without touching
+// `isPaid` — the order stays payable and the "Оплатити рахунок" button
+// remains available for a retry.
+export function markOrderPaymentDeclined(orderId: string, reason: string): void {
+  const order = orders.find((o) => o.id === orderId);
+  if (!order) return;
+
+  const correlationId = newCorrelationId();
+  logOrderAction({
+    correlationId,
+    actionType: 'payment_declined',
+    order,
+    actorRole: 'system',
+    source: 'system_auto',
+    statusOverride: 'payment_declined',
+    payload: { reason },
+  });
+
+  pushEvent(`Order #${order.orderNumber} payment declined`);
   notify();
 }
 

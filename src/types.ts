@@ -16,6 +16,9 @@ export interface Order {
   createdAt: string;
   prepStartedAt?: string;
   readyStartedAt?: string;
+  isPaid: boolean;
+  paidAt?: string;
+  paymentReference?: string;
 }
 
 export interface TableCounts {
