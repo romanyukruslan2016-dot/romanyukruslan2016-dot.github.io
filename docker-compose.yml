@@ -1,0 +1,12 @@
+# Supabase (database, auth, RLS, real-time) is an external managed backend,
+# so this compose file only defines the frontend. There is no backend/db
+# service here on purpose — the app talks to Supabase over the network
+# using the URL/anon key from the environment, not to anything running locally.
+services:
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    ports:
+      - "80:80"
+    restart: unless-stopped
